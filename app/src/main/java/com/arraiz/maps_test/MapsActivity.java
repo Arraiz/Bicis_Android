@@ -3,12 +3,14 @@ package com.arraiz.maps_test;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Debug;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -16,6 +18,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.ArrayList;
@@ -27,7 +30,7 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
     private GoogleMap mGoogleMap;
     public static final String BASE_URL = "http://api.arraiz.eus/";
@@ -38,11 +41,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static final int MY_PERMISSION_REQUEST_COARSE_LOCATION = 102;
 
     private static ArrayList<StationModel> sStationModels = new ArrayList<>();
+
+
+    private static TextView mNameTV;
+    private static TextView mBicisTV;
+    private static TextView mAnclajesTV;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
+
+        mNameTV=findViewById(R.id.textView_name);
+        mAnclajesTV=findViewById(R.id.textView_anclajes);
+        mBicisTV=findViewById(R.id.textView_bicis);
 
         //retrofit configuration
         Retrofit retrofit= new Retrofit.Builder()
@@ -63,7 +75,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     sStationModels.add(response.body().get(i));
                 }
                 for (int i=0;i<sStationModels.size();i++){
-                    mGoogleMap.addMarker(new MarkerOptions().position(new LatLng(Double.valueOf(sStationModels.get(i).getLat()),Double.valueOf(sStationModels.get(i).getLon()))));
+                    mGoogleMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(Double.valueOf(sStationModels.get(i).getLat()),Double.valueOf(sStationModels.get(i).getLon()))));
                 }
             }
 
@@ -90,7 +103,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mGoogleMap = googleMap;
         mGoogleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-
+        mGoogleMap.setOnMarkerClickListener(this);
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             //User has previously accepted this permission
             if (ActivityCompat.checkSelfPermission(this,
@@ -162,4 +175,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
 
+    @Override
+    public boolean onMarkerClick(Marker marker) {
+               Log.d("MARKER",marker.getId().substring(1));
+               Log.d("MARKER",sStationModels.get(Integer.valueOf(marker.getId().substring(1))).getId().substring(2));
+                mNameTV.setText(sStationModels.get(Integer.valueOf(marker.getId().substring(1))).getNombre());
+
+
+        return false;
+    }
 }
