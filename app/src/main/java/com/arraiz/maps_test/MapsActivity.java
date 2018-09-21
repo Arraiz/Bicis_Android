@@ -1,6 +1,7 @@
 package com.arraiz.maps_test;
 
 import android.Manifest;
+import android.app.ActionBar;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -89,6 +90,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     sStationModels.add(response.body().get(i));
                 }
                 for (int i=0;i<sStationModels.size();i++){
+
                     mGoogleMap.addMarker(new MarkerOptions()
                             .icon(BitmapDescriptorFactory.fromResource(getResources().getIdentifier("marker_"+sStationModels.get(i).getBicisLibres(),"mipmap",getPackageName())))
                             .position(new LatLng(Double.valueOf(sStationModels.get(i).getLat()),Double.valueOf(sStationModels.get(i).getLon()))));
@@ -97,9 +99,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             @Override
             public void onFailure(Call<List<StationModel>> call, Throwable t) {
-                Log.d("APICALL",t.getMessage());
                 Toast.makeText(MapsActivity.this, "No internet conecction", Toast.LENGTH_SHORT).show();
-
             }
         });
 
@@ -112,6 +112,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+
+        ActionBar actionBar = getActionBar();
+        actionBar.setDisplayShowTitleEnabled(false);
+
     }
 
 
@@ -195,24 +200,32 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater menuInflater = getMenuInflater();
-        menuInflater.inflate(R.menu.dashboard, menu);
+        menuInflater.inflate(R.menu.search_menu, menu);
 
-        MenuItem searchItem = menu.findItem(R.id.action_search);
+        MenuItem searchItem = menu.findItem(R.id.search_station);
 
-        SearchManager searchManager = (SearchManager) MapsActivity.this.getSystemService(Context.SEARCH_SERVICE);
+        SearchView searchView = (SearchView) searchItem.getActionView();
 
-        SearchView searchView = null;
-        if (searchItem != null) {
-            searchView = (SearchView) searchItem.getActionView();
-        }
-        if (searchView != null) {
-            searchView.setSearchableInfo(searchManager.getSearchableInfo(MapsActivity.this.getComponentName()));
-        }
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String s) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String s) {
+                return false;
+            }
+        });
+
+
         return super.onCreateOptionsMenu(menu);
     }
 
     @Override
     public boolean onMarkerClick(Marker marker) {
+        //TOOD fixear los indices de la
                Log.d("MARKER",marker.getId().substring(1));
                Log.d("MARKER",sStationModels.get(Integer.valueOf(marker.getId().substring(1))).getId().substring(2));
                 mNameTV.setText(sStationModels.get(Integer.valueOf(marker.getId().substring(1))).getNombre());
