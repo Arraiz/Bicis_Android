@@ -1,7 +1,10 @@
 package com.arraiz.maps_test;
 
 import android.Manifest;
+import android.app.SearchManager;
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.os.Build;
 import android.os.Debug;
 import android.support.annotation.NonNull;
@@ -9,7 +12,13 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.widget.SearchView;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -17,6 +26,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -46,6 +57,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static TextView mNameTV;
     private static TextView mBicisTV;
     private static TextView mAnclajesTV;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,12 +68,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mAnclajesTV=findViewById(R.id.textView_anclajes);
         mBicisTV=findViewById(R.id.textView_bicis);
 
+
+
+
         //retrofit configuration
         Retrofit retrofit= new Retrofit.Builder()
                 .baseUrl(BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
-        APIbicis apIbicis = retrofit.create(APIbicis.class);
+        final APIbicis apIbicis = retrofit.create(APIbicis.class);
 
         Call<List<StationModel>> getBicis = apIbicis.getStations();
 
@@ -71,11 +86,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
                 for (int i =0;i<response.body().size();i++) {
-                    Log.d("APICALL", response.body().get(i).toString());
                     sStationModels.add(response.body().get(i));
                 }
                 for (int i=0;i<sStationModels.size();i++){
                     mGoogleMap.addMarker(new MarkerOptions()
+                            .icon(BitmapDescriptorFactory.fromResource(getResources().getIdentifier("marker_"+sStationModels.get(i).getBicisLibres(),"mipmap",getPackageName())))
                             .position(new LatLng(Double.valueOf(sStationModels.get(i).getLat()),Double.valueOf(sStationModels.get(i).getLon()))));
                 }
             }
@@ -83,9 +98,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onFailure(Call<List<StationModel>> call, Throwable t) {
                 Log.d("APICALL",t.getMessage());
+                Toast.makeText(MapsActivity.this, "No internet conecction", Toast.LENGTH_SHORT).show();
 
             }
         });
+
 
 
 
@@ -174,6 +191,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater menuInflater = getMenuInflater();
+        menuInflater.inflate(R.menu.dashboard, menu);
+
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+
+        SearchManager searchManager = (SearchManager) MapsActivity.this.getSystemService(Context.SEARCH_SERVICE);
+
+        SearchView searchView = null;
+        if (searchItem != null) {
+            searchView = (SearchView) searchItem.getActionView();
+        }
+        if (searchView != null) {
+            searchView.setSearchableInfo(searchManager.getSearchableInfo(MapsActivity.this.getComponentName()));
+        }
+        return super.onCreateOptionsMenu(menu);
+    }
 
     @Override
     public boolean onMarkerClick(Marker marker) {
