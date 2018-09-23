@@ -1,19 +1,16 @@
 package com.arraiz.maps_test;
 
 import android.Manifest;
-import android.app.ActionBar;
-import android.app.SearchManager;
-import android.content.Context;
 import android.content.pm.PackageManager;
-import android.content.res.Resources;
+import android.database.Cursor;
+import android.database.MatrixCursor;
 import android.os.Build;
-import android.os.Debug;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.provider.BaseColumns;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v4.widget.CursorAdapter;
+import android.support.v4.widget.SimpleCursorAdapter;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
@@ -24,11 +21,11 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -59,7 +56,7 @@ public class MapsActivity extends AppCompatActivity  implements OnMapReadyCallba
     private static TextView mNameTV;
     private static TextView mBicisTV;
     private static TextView mAnclajesTV;
-
+    private SimpleCursorAdapter mAdapter;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,6 +67,17 @@ public class MapsActivity extends AppCompatActivity  implements OnMapReadyCallba
         mAnclajesTV=findViewById(R.id.textView_anclajes);
         mBicisTV=findViewById(R.id.textView_bicis);
 
+
+        final String[] from = new String[] {"Estacion"};
+
+        final int[] to = new int[] {R.id.estacion_tv_search};
+
+        mAdapter = new SimpleCursorAdapter(this,
+                R.layout.sugestion_layout,
+                null,
+                from,
+                to,
+                CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
 
 
 
@@ -206,9 +214,30 @@ public class MapsActivity extends AppCompatActivity  implements OnMapReadyCallba
 
         MenuItem searchItem = menu.findItem(R.id.search_station);
 
-        SearchView searchView = (SearchView) searchItem.getActionView();
+        final SearchView searchView = (SearchView) searchItem.getActionView();
+        searchView.setSuggestionsAdapter(mAdapter);
+        searchView.setOnSuggestionListener(new SearchView.OnSuggestionListener() {
+            @Override
+            public boolean onSuggestionSelect(int i) {
+                Log.d("MARKER",sStationModels.get(i).getNombre());
+                return false;
+            }
 
+            @Override
+            public boolean onSuggestionClick(int i) {
 
+                Cursor cursor = (Cursor) mAdapter.getItem(i);
+                String s=cursor.getString(0);
+
+                Log.d("SEAR",sStationModels.get(Integer.valueOf(s)).getNombre());
+
+                LatLng coordinate = new LatLng(Double.valueOf(sStationModels.get(Integer.valueOf(s)).getLat()), Double.valueOf(sStationModels.get(Integer.valueOf(s)).getLon())); //Store these lat lng values somewhere. These should be constant.
+                CameraUpdate location = CameraUpdateFactory.newLatLngZoom(
+                        coordinate, 15);
+                mGoogleMap.animateCamera(location);
+                return false;
+            }
+        });
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String s) {
@@ -217,12 +246,33 @@ public class MapsActivity extends AppCompatActivity  implements OnMapReadyCallba
 
             @Override
             public boolean onQueryTextChange(String s) {
+
+                populateAdapter(s);
                 return false;
             }
         });
 
 
         return super.onCreateOptionsMenu(menu);
+    }
+
+    private void populateAdapter(String query) {
+        final MatrixCursor c = new MatrixCursor(new String[]{BaseColumns._ID, "Estacion"});
+        for (int i = 0; i < sStationModels.size(); i++) {
+
+            if(query.length()>1) {
+                if (sStationModels.get(i).getNombre().toLowerCase().contains(query.toLowerCase()))
+                    c.addRow(new Object[]{i, sStationModels.get(i).getNombre()});
+            }else{
+                if (sStationModels.get(i).getNombre().toLowerCase().indexOf(query.toLowerCase())>=0){
+                    c.addRow(new Object[]{i, sStationModels.get(i).getNombre()});
+                }
+            }
+        }
+        mAdapter.changeCursor(c);
+        mAdapter.notifyDataSetChanged();
+
+
     }
 
     @Override
@@ -235,4 +285,8 @@ public class MapsActivity extends AppCompatActivity  implements OnMapReadyCallba
 
         return false;
     }
+
+
+
+
 }
