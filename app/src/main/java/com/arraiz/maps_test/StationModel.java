@@ -124,6 +124,7 @@ public class StationModel {
 
     @Override
     public String toString() {
+
         return "StationModel{" +
                 "anclajesAveriados='" + anclajesAveriados + '\'' +
                 ", anclajesLibres='" + anclajesLibres + '\'' +
